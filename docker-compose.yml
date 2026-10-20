@@ -1,0 +1,42 @@
+# Local run of the Ground Truth API with the bundled fictional sample corpus.
+#
+#   docker compose up --build
+#   curl -s localhost:8000/readyz
+#
+# Configuration is environment-only; see docs/deployment.md for every variable.
+name: groundtruth
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: groundtruth:local
+    ports:
+      - "8000:8000"
+    environment:
+      GROUNDTRUTH_CORPUS_PATH: /app/data/sample/corpus.jsonl
+      GROUNDTRUTH_RETRIEVER: bm25
+      GROUNDTRUTH_LOG_LEVEL: INFO
+      GROUNDTRUTH_LOG_JSON: "true"
+      # Uncomment to require X-API-Key on /v1 endpoints (comma-separated keys).
+      # GROUNDTRUTH_API_KEYS: change-me
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=4).status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+    restart: unless-stopped
