@@ -1,0 +1,211 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  UV_LOCKED: "1"
+  FORCE_COLOR: "1"
+
+jobs:
+  lint:
+    name: Lint, format and types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install locked dependencies
+        run: uv sync --locked
+
+      - name: Ruff lint
+        run: uv run ruff check --output-format=github .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Mypy (strict)
+        run: uv run mypy
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install locked dependencies
+        run: uv sync --locked --python ${{ matrix.python-version }}
+
+      # The coverage gate (fail_under = 90) lives in pyproject.toml, so the
+      # same threshold applies locally (`make check`) and here.
+      - name: Pytest with coverage
+        run: uv run --python ${{ matrix.python-version }} pytest --cov --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  spec:
+    name: OpenSpec validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate specs and changes (strict)
+        run: npx --yes @fission-ai/openspec@1.14.3 validate --all --strict
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check package metadata
+        run: uvx twine check --strict dist/*
+
+      - name: Upload distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+  docker:
+    name: Container build and smoke test
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CONTAINER: groundtruth-smoke
+      BASE_URL: http://127.0.0.1:8000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: groundtruth:ci
+          build-args: |
+            VERSION=ci
+            REVISION=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start container (read-only root filesystem)
+        run: |
+          docker run -d --name "$CONTAINER" -p 8000:8000 \
+            --read-only --tmpfs /tmp --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            -e GROUNDTRUTH_CORPUS_PATH=/app/data/sample/corpus.jsonl \
+            groundtruth:ci
+
+      - name: Wait for readiness
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS "$BASE_URL/readyz" > /dev/null 2>&1; then
+              echo "ready"
+              exit 0
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER")" != "true" ]; then
+              echo "::error::container exited before becoming ready"
+              exit 1
+            fi
+            sleep 1
+          done
+          echo "::error::/readyz did not succeed within 60s"
+          exit 1
+
+      - name: Liveness probe
+        run: curl -fsS "$BASE_URL/healthz"
+
+      - name: Sample evaluation request
+        run: |
+          response=$(curl -fsS -X POST "$BASE_URL/v1/evaluate" \
+            -H 'Content-Type: application/json' \
+            -d '{"qrels":{"q1":{"d1":1}},"run":{"q1":{"d1":1.0}},"metrics":["P@1"]}')
+          echo "$response"
+          echo "$response" | jq -e '.aggregate["P@1"] == 1.0' > /dev/null
+
+      - name: Process runs as non-root
+        run: |
+          uid=$(docker exec "$CONTAINER" id -u)
+          echo "uid=$uid"
+          test "$uid" != "0"
+
+      - name: Container logs
+        if: failure()
+        run: docker logs "$CONTAINER" || true
+
+      - name: Stop container
+        if: always()
+        run: docker rm -f "$CONTAINER" || true
+
+  k8s:
+    name: Kubernetes manifests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      KUBECONFORM_VERSION: v0.7.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -fsSL -o /tmp/kubeconform.tar.gz \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          sudo tar -xzf /tmp/kubeconform.tar.gz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      - name: Render and validate
+        run: |
+          set -o pipefail
+          kubectl kustomize deploy/k8s | kubeconform -strict -summary -
