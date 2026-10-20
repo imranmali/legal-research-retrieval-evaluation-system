@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: groundtruth-api
+  labels:
+    app.kubernetes.io/name: groundtruth-api
+    app.kubernetes.io/component: api
+data:
+  # Application settings (groundtruth.config.Settings, env prefix GROUNDTRUTH_).
+  # The image bundles the fictional sample corpus; mount your own corpus
+  # (e.g. from a PVC or an init container) and point this path at it.
+  GROUNDTRUTH_CORPUS_PATH: /app/data/sample/corpus.jsonl
+  GROUNDTRUTH_RETRIEVER: bm25
+  GROUNDTRUTH_LOG_LEVEL: INFO
+  GROUNDTRUTH_LOG_JSON: "true"
+  GROUNDTRUTH_MAX_BODY_BYTES: "52428800"
+  GROUNDTRUTH_MAX_RUN_ENTRIES: "5000000"
+  # Gunicorn workers per pod. Keep at or below the CPU limit; every worker
+  # builds its own copy of the corpus index.
+  WEB_CONCURRENCY: "2"
+  # API keys are credentials: supply GROUNDTRUTH_API_KEYS from a Secret
+  # (see deploy/README.md), never from this ConfigMap.
