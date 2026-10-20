@@ -1,0 +1,18 @@
+schema: spec-driven
+
+context: |
+  Ground Truth is a Python (>=3.11) library, CLI and HTTP service for evaluating
+  legal research retrieval systems. Import package `groundtruth`, distribution
+  `groundtruth-legal`, src layout, managed with uv.
+  Relevance grades follow the legal scale 0 = not relevant, 1 = tangential,
+  2 = relevant, 3 = controlling/key authority.
+  Metric results must stay numerically compatible with trec_eval conventions
+  (tie-breaking, unjudged = non-relevant) unless a requirement says otherwise.
+  Every change must keep `ruff check`, `ruff format --check`, `mypy --strict`
+  and `pytest` (coverage >= 90%) green.
+
+rules:
+  proposal:
+    - State what is out of scope.
+  tasks:
+    - Each task names the test or command that proves it is done.
