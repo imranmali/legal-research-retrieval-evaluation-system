@@ -1,5 +1,7 @@
 """Metric contract, registry and the built-in metric families."""
 
+# Importing the built-in families registers them with the registry.
+from groundtruth.metrics import standard as _standard  # noqa: F401
 from groundtruth.metrics.base import (
     EMPTY_CONTEXT,
     CutoffPolicy,

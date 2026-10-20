@@ -116,15 +116,20 @@ M = TypeVar("M", bound=type[Metric])
 
 
 def register_metric(cls: M) -> M:
-    """Class decorator registering a metric family under its name and aliases."""
-    for key in (cls.name, *cls.aliases):
-        normalized = key.lower()
-        existing = _REGISTRY.get(normalized)
+    """Class decorator registering a metric family under its name and aliases.
+
+    All names are checked before any is registered, so a conflict leaves the
+    registry unchanged.
+    """
+    keys = (cls.name, *cls.aliases)
+    for key in keys:
+        existing = _REGISTRY.get(key.lower())
         if existing is not None and existing is not cls:
             raise ConfigurationError(
                 f"metric name {key!r} already registered by {existing.__name__}"
             )
-        _REGISTRY[normalized] = cls
+    for key in keys:
+        _REGISTRY[key.lower()] = cls
     return cls
 
 
