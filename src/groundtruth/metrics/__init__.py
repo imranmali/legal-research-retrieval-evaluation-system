@@ -23,3 +23,7 @@ __all__ = [
     "get_metric",
     "register_metric",
 ]
+
+# Legal-domain families register last; they depend only on ``metrics.base``,
+# so this import cannot form a cycle.
+from groundtruth.legal import metrics as _legal  # noqa: F401
