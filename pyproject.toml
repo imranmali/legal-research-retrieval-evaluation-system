@@ -80,6 +80,10 @@ plugins = ["pydantic.mypy"]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = ["slow: long-running tests"]
+filterwarnings = [
+    # Starlette nudges TestClient users towards the httpx2 package; httpx is fine here.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:UserWarning",
+]
 
 [tool.coverage.run]
 source = ["groundtruth"]
