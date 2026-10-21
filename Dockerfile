@@ -8,7 +8,7 @@
 
 # Base images are spelled out literally (not via ARG) so Dependabot can bump them.
 # Builder and runtime must use the same Python image: the venv links to it.
-FROM ghcr.io/astral-sh/uv:0.11.32 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.4 AS uv
 
 # ---------------------------------------------------------------------------
 # Builder
