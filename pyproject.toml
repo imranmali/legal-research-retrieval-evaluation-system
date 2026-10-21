@@ -35,6 +35,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "prometheus-client>=0.20",
     "gunicorn>=22.0; sys_platform != 'win32'",
+    "uvicorn-worker>=0.3; sys_platform != 'win32'",
 ]
 
 [project.scripts]

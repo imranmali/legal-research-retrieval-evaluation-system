@@ -19,8 +19,12 @@ with every merge.
   `python:3.12-slim`. No compilers, uv, tests or dev dependencies are present.
 - Runs as user `groundtruth` (uid/gid 10001) and works on a read-only root
   filesystem; only `/tmp` needs to be writable (gunicorn heartbeats use `/dev/shm`).
-- Process model: gunicorn with `uvicorn.workers.UvicornWorker`, serving the app
-  factory `groundtruth.api.app:create_app()` on `0.0.0.0:8000`.
+- Process model: gunicorn with `uvicorn_worker.UvicornWorker` (the `uvicorn-worker`
+  package), serving the app factory `groundtruth.api.app:create_app()` on `0.0.0.0:8000`.
+- Logs: one JSON object per line on stderr. The application writes one access
+  line per request (`groundtruth.access`: method, path, route template, status,
+  duration, request id); every line logged while serving a request carries its
+  `request_id`, which is also returned in the `X-Request-ID` response header.
 - `HEALTHCHECK` calls `http://127.0.0.1:8000/healthz` with Python's `urllib`.
 - Configuration is environment-only (table below). `GROUNDTRUTH_CORPUS_PATH`
   is unset by default, so `/v1/search` answers 503 until a corpus is configured.

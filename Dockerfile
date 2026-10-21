@@ -79,5 +79,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
 # GROUNDTRUTH_CORPUS_PATH is intentionally unset: /v1/search answers 503 until
 # an operator points it at a corpus (e.g. /app/data/sample/corpus.jsonl).
 CMD ["gunicorn", "--config", "/app/gunicorn.conf.py", \
-     "--worker-class", "uvicorn.workers.UvicornWorker", \
+     "--worker-class", "uvicorn_worker.UvicornWorker", \
      "groundtruth.api.app:create_app()"]

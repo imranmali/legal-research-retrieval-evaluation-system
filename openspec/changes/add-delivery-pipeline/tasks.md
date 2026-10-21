@@ -2,7 +2,7 @@
 
 ## 1. Container and local runtime
 
-- [ ] 1.1 Add multi-stage `Dockerfile`, `.dockerignore` and `docker-compose.yml`; verify `docker build` succeeds and the container answers `/healthz` as non-root
+- [x] 1.1 Add multi-stage `Dockerfile`, `.dockerignore` and `docker-compose.yml`; verify `docker build` succeeds and the container answers `/healthz` as non-root
 
 ## 2. CI/CD workflows
 
