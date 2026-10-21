@@ -1,0 +1,18 @@
+# Allow-list build context: ignore everything, then re-include what the
+# image needs. Keeps tests, specs, caches, secrets and VCS data out of layers.
+*
+
+!pyproject.toml
+!uv.lock
+!README.md
+!LICENSE
+!src/
+!deploy/gunicorn.conf.py
+!data/sample/
+
+# Never ship bytecode or caches that slipped into re-included paths.
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache

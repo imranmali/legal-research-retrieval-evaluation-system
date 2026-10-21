@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: groundtruth
+
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: groundtruth
+      app.kubernetes.io/managed-by: kustomize
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+
+# Pin a released version in an overlay instead of tracking `main`, e.g.:
+#   images:
+#     - name: ghcr.io/imranmali/legal-research-retrieval-evaluation-system
+#       newTag: "0.1.0"
