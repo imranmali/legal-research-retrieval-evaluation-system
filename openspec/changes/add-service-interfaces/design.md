@@ -39,6 +39,24 @@ and `groundtruth.retrieval` (see the two earlier changes).
 - **Corpus preload**: in the lifespan handler, load `corpus_path` and fit the
   configured retriever once; shared read-only across requests.
 
+## Implementation notes
+
+- Package layout: `api/app.py` (factory, lifespan), `api/state.py` (`ServiceState`:
+  settings, per-app Prometheus `CollectorRegistry`, ready flag, corpus and retriever),
+  `api/routes.py`, `api/schemas.py`, `api/middleware.py`, `api/errors.py`.
+- `configure_logging(level, *, json_format=True)`; JSON lines carry `request_id`
+  from a contextvar. The middleware writes one `groundtruth.access` line per
+  request, so the server access log (`uvicorn.access`) is silenced.
+- The body limit is enforced when the application first reads the body
+  (declared `Content-Length` or streamed byte count), so rejected requests are
+  still routed and labelled with their route template in metrics and logs.
+- Unexpected exceptions are turned into `500 internal_error` by the outermost
+  request middleware so that the response still carries `X-Request-ID`.
+- API keys are `SecretStr` values compared with `secrets.compare_digest` against
+  every configured key.
+- Gunicorn uses `uvicorn_worker.UvicornWorker` from the `uvicorn-worker`
+  package (`uvicorn.workers` is deprecated).
+
 ## Risks / Trade-offs
 
 - [Very large payloads tie up workers] → body-size and run-entry limits, and the

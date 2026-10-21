@@ -25,7 +25,7 @@ point is `groundtruth.api.app:create_app` (factory); CLI entry `groundtruth`.
 - **Dockerfile**: builder stage `ghcr.io/astral-sh/uv` + `python:3.12-slim`, `uv sync --locked
   --no-dev --no-editable` into `/opt/venv`; runtime stage `python:3.12-slim`, copies venv and
   sample data, user `groundtruth` (uid 10001), `HEALTHCHECK` via python urllib,
-  `CMD gunicorn -k uvicorn.workers.UvicornWorker` with `WEB_CONCURRENCY` workers and
+  `CMD gunicorn -k uvicorn_worker.UvicornWorker` (`uvicorn-worker` package) with `WEB_CONCURRENCY` workers and
   `--factory`-equivalent `"groundtruth.api.app:create_app()"`.
 - **Kubernetes** (`deploy/k8s/`, kustomize): Deployment (3 replicas, rolling update
   maxUnavailable 0, probes, read-only root fs, drop all capabilities), Service, ConfigMap,

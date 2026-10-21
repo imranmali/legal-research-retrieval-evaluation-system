@@ -15,7 +15,8 @@ def _int_env(name: str, default: int) -> int:
 
 
 bind = f"0.0.0.0:{_int_env('PORT', 8000)}"
-worker_class = "uvicorn.workers.UvicornWorker"
+# From the uvicorn-worker package (uvicorn.workers.UvicornWorker is deprecated).
+worker_class = "uvicorn_worker.UvicornWorker"
 workers = _int_env("WEB_CONCURRENCY", 2)
 
 # Requests are evaluated in-process; allow long evaluations before the
@@ -34,8 +35,10 @@ max_requests_jitter = _int_env("GUNICORN_MAX_REQUESTS_JITTER", 200)
 worker_tmp_dir = "/dev/shm"
 control_socket_disable = True
 
-# Logs go to stdout/stderr for the container runtime to collect.
-accesslog = "-"
+# Logs go to stderr for the container runtime to collect. The application
+# writes its own structured access log (one JSON line per request, with the
+# request id), so gunicorn's access log stays off to avoid duplicate lines.
+accesslog = None
 errorlog = "-"
 loglevel = os.environ.get("GUNICORN_LOG_LEVEL", "info")
 

@@ -35,6 +35,7 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "prometheus-client>=0.20",
     "gunicorn>=22.0; sys_platform != 'win32'",
+    "uvicorn-worker>=0.3; sys_platform != 'win32'",
 ]
 
 [project.scripts]
@@ -80,6 +81,10 @@ plugins = ["pydantic.mypy"]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = ["slow: long-running tests"]
+filterwarnings = [
+    # Starlette nudges TestClient users towards the httpx2 package; httpx is fine here.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:UserWarning",
+]
 
 [tool.coverage.run]
 source = ["groundtruth"]
