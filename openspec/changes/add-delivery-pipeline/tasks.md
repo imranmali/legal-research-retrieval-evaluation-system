@@ -16,7 +16,7 @@
 ## 4. Project hygiene and docs
 
 - [x] 4.1 Add pre-commit, Dependabot, PR template, issue templates, CONTRIBUTING, SECURITY, CHANGELOG, CODE_OF_CONDUCT; verify `pre-commit run --all-files` passes
-- [ ] 4.2 Write full README (overview, install, CLI, API, metrics reference, architecture, deployment, license); verify commands in it run against `data/sample`
+- [x] 4.2 Write full README (overview, install, CLI, API, metrics reference, architecture, deployment, license); verify commands in it run against `data/sample`
 
 ## Workflow follow-up
 
