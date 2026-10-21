@@ -6,7 +6,7 @@
 
 ## 2. CI/CD workflows
 
-- [ ] 2.1 Add `.github/workflows/ci.yml` with lint, test matrix, spec, build, docker smoke and k8s validation jobs; verify YAML parses and jobs run green on the pull request
+- [x] 2.1 Add `.github/workflows/ci.yml` with lint, test matrix, spec, build, docker smoke and k8s validation jobs; verify YAML parses and jobs run green on the pull request
 - [x] 2.2 Add `cd.yml` and `release.yml`; verify YAML parses and tag/version check script works locally
 
 ## 3. Deployment manifests
