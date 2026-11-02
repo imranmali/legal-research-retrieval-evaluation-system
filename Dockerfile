@@ -13,7 +13,7 @@ FROM ghcr.io/astral-sh/uv:0.11.32 AS uv
 # ---------------------------------------------------------------------------
 # Builder
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim AS builder
+FROM python:3.13-slim AS builder
 
 COPY --from=uv /uv /uvx /usr/local/bin/
 
@@ -40,7 +40,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ---------------------------------------------------------------------------
 # Runtime
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim AS runtime
+FROM python:3.13-slim AS runtime
 
 ARG VERSION=0.0.0+local
 ARG REVISION=unknown
